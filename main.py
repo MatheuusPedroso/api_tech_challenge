@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import FastAPI, Depends, HTTPException, Form
+from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 
@@ -11,48 +11,47 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+def create_token(username: str):
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode = {"sub": username, "exp": expire}
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def criar_token(usuario: str):
-    expiracao = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    dados = {"sub": usuario, "exp": expiracao}
-    return jwt.encode(dados, SECRET_KEY, algorithm=ALGORITHM)
-
-
-def validar_token(token: str = Depends(oauth2_scheme)):
+def verify_token(token: str = Depends(oauth2_scheme)):
     try:
-        jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expirado")
     except JWTError:
-        raise HTTPException(status_code=401, detail="Token inválido ou expirado")
-
+        raise HTTPException(status_code=401, detail="Token inválido")
 
 @app.post("/token")
-def login(dados: OAuth2PasswordRequestForm = Depends()):
-    if dados.username == "master" and dados.password == "Master@123":
-        token = criar_token(dados.username)
+def login(username: str = Form(...), password: str = Form(...)):
+    if username == "master" and password == "Master@123":
+        token = create_token(username)
         return {"access_token": token, "token_type": "bearer"}
-    raise HTTPException(status_code=401, detail="Credenciais incorretas")
+    raise HTTPException(status_code=401, detail="Credenciais inválidas")
 
+@app.get("/")
+def root():
+    return {"message": "API Tech Challenge rodando com sucesso!"}
 
 @app.get("/producao/{ano}")
-def producao(ano: int, _: str = Depends(validar_token)):
+def get_producao(ano: int, token: str = Depends(verify_token)):
     return {"tipo": "producao", "ano": ano, "dados": []}
 
-
 @app.get("/comercializacao/{ano}")
-def comercializacao(ano: int, _: str = Depends(validar_token)):
+def get_comercializacao(ano: int, token: str = Depends(verify_token)):
     return {"tipo": "comercializacao", "ano": ano, "dados": []}
 
-
 @app.get("/processamento/{ano}")
-def processamento(ano: int, _: str = Depends(validar_token)):
+def get_processamento(ano: int, token: str = Depends(verify_token)):
     return {"tipo": "processamento", "ano": ano, "dados": []}
 
-
 @app.get("/importacao/{ano}")
-def importacao(ano: int, _: str = Depends(validar_token)):
+def get_importacao(ano: int, token: str = Depends(verify_token)):
     return {"tipo": "importacao", "ano": ano, "dados": []}
 
-
 @app.get("/exportacao/{ano}")
-def exportacao(ano: int, _: str = Depends(validar_token)):
+def get_exportacao(ano: int, token: str = Depends(verify_token)):
     return {"tipo": "exportacao", "ano": ano, "dados": []}
