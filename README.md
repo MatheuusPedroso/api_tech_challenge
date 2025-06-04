@@ -72,6 +72,7 @@ GET /exportacao/{ano}
 
 ## 📽️ Vídeo de apresentação
 
+https://www.loom.com/share/b0149381373f474f957eadbd581a8a10?sid=b87bb8a9-06d2-4226-a3bb-4215dbff5e1d
 
 ## 🛀 Diagrama de arquitetura
 
